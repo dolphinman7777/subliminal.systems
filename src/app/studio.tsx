@@ -53,13 +53,13 @@ interface AnimatedBentoBoxProps {
 const AnimatedBentoBox: React.FC<AnimatedBentoBoxProps> = ({ children, className, gradient }) => {
   return (
     <motion.div
-      className={`group relative col-span-1 flex flex-col justify-between overflow-hidden rounded-2xl p-8 ${className}`}
+      className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl p-4 ${className}`}
       whileHover={{ 
-        scale: 1.01, // Reduced from 1.02 to 1.01 for a subtler effect
+        scale: 1.01,
         boxShadow: "0 10px 15px -5px rgba(0, 0, 0, 0.1), 0 5px 5px -5px rgba(0, 0, 0, 0.04)",
         zIndex: 10
       }}
-      transition={{ duration: 0.2 }} // Slightly faster transition
+      transition={{ duration: 0.2 }}
     >
       <div className={`absolute inset-0 ${gradient} transition-opacity duration-300`} />
       <div className="relative z-10 flex flex-col h-full">
@@ -69,7 +69,7 @@ const AnimatedBentoBox: React.FC<AnimatedBentoBoxProps> = ({ children, className
         className="pointer-events-none absolute inset-0 transform-gpu transition-all duration-300 group-hover:bg-black/[.03] group-hover:dark:bg-neutral-800/10"
         initial={{ opacity: 0 }}
         whileHover={{ opacity: 1 }}
-        transition={{ duration: 0.2 }} // Slightly faster transition
+        transition={{ duration: 0.2 }}
       />
     </motion.div>
   );
@@ -84,6 +84,35 @@ const speedOptions = [
   { value: 1.5, label: '1.5x' },
   { value: 2, label: '2x' },
 ];
+
+const Notepad: React.FC = () => {
+  const [notes, setNotes] = useState<string>('');
+
+  useEffect(() => {
+    const savedNotes = localStorage.getItem('affirmationNotes');
+    if (savedNotes) {
+      setNotes(savedNotes);
+    }
+  }, []);
+
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newNotes = e.target.value;
+    setNotes(newNotes);
+    localStorage.setItem('affirmationNotes', newNotes);
+  };
+
+  return (
+    <div className="flex flex-col h-full scale-98"> {/* Added scale-98 here */}
+      <h3 className="text-sm font-semibold mb-2">Notes</h3>
+      <textarea
+        className="w-full h-full p-2 text-sm border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 overflow-y-auto"
+        value={notes}
+        onChange={handleNotesChange}
+        placeholder="Write your notes here..."
+      />
+    </div>
+  );
+};
 
 function AffirmationSearch({ 
   onAffirmationGenerated, 
@@ -330,7 +359,7 @@ function AffirmationSearch({
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full h-full flex flex-col">
       <h2 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-4 text-gray-800 dark:text-gray-200 subtle-glow">Affirmation Creator</h2>
       <p className="text-sm text-gray-600 mb-2">Token Balance: {tokenBalance}</p>
       <div className="flex items-center space-x-2 mb-4">
@@ -474,6 +503,11 @@ function AffirmationSearch({
       {isTtsLoading && (
         <p className="text-sm text-gray-500 mt-2">Converting to speech...</p>
       )}
+
+      {/* Wrap the Notepad in a div that will grow to fill remaining space */}
+      <div className="flex-grow mt-4 overflow-hidden">
+        <Notepad />
+      </div>
     </div>
   )
 }
@@ -1353,11 +1387,11 @@ export const Studio: React.FC = () => {
 
   const handleCreateFinalAudio = async () => {
     if (!generatedAffirmations.length || !selectedBackingTrack) {
-        toast({
+      toast({
             description: 'Affirmations or backing track is missing. Please generate affirmations and select a backing track first.',
             variant: 'destructive',
-        });
-        return;
+      });
+      return;
     }
 
     setIsLoading(true);
@@ -1373,36 +1407,36 @@ export const Studio: React.FC = () => {
             ttsDuration
         });
 
-        const response = await fetch('/api/combine-audio', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
+      const response = await fetch('/api/combine-audio', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
                 text,
                 selectedBackingTrack: selectedBackingTrack || '', // Ensure this is a string
-                ttsVolume,
-                backingTrackVolume,
+          ttsVolume,
+          backingTrackVolume,
                 trackDuration: 900, // Set to 15 minutes (900 seconds)
                 ttsSpeed: playbackRate,
                 ttsDuration
-            }),
-        });
+        }),
+      });
 
-        if (!response.ok) {
+      if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.error || 'Failed to combine audio');
-        }
+      }
 
-        const data = await response.json();
+      const data = await response.json();
         setAffirmationAudioUrl(data.audioUrl);
 
-        toast({
+      toast({
             description: `Final audio (${Math.floor(900 / 60)} minutes) created and ready for playback.`,
-        });
+      });
     } catch (error) {
         console.error('Error creating final audio:', error);
-        toast({
+      toast({
             description: error instanceof Error ? error.message : 'An unknown error occurred while creating the final audio. Please try again.',
             variant: 'destructive',
         });
@@ -1463,10 +1497,10 @@ export const Studio: React.FC = () => {
   };
   const handleDownloadClick = async () => {
     if (!combinedAudioUrl) {
-        toast({
+          toast({
         description: "No combined audio available. Please create the final audio first.",
-          variant: "destructive",
-      });
+            variant: "destructive",
+          });
       return;
     }
 
@@ -1487,12 +1521,12 @@ export const Studio: React.FC = () => {
       toast({
         description: "Combined audio downloaded successfully",
       });
-    } catch (error) {
+      } catch (error) {
       console.error('Error downloading audio:', error);
-      toast({
+        toast({
         description: "Failed to download combined audio",
-        variant: "destructive",
-      });
+          variant: "destructive",
+        });
     }
   };
 
@@ -1506,11 +1540,11 @@ export const Studio: React.FC = () => {
 
   const handleDownload = async () => {
     if (!ttsAudioUrl || !selectedBackingTrack) {
-    toast({
+        toast({
         description: "Please generate affirmations and select a background track before downloading.",
         variant: "destructive",
-    });
-      return;
+        });
+        return;
     }
 
     setIsLoading(true);
@@ -1518,21 +1552,21 @@ export const Studio: React.FC = () => {
     try {
       const response = await fetch("/api/combine-audio", {
         method: "POST",
-        headers: {
+            headers: {
           "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+            },
+            body: JSON.stringify({
           ttsAudioUrl,
           backgroundTrack: selectedBackingTrack,
           ttsVolume: parseFloat(ttsVolume.toFixed(3)),
           bgVolume: parseFloat(backingTrackVolume.toFixed(3)),
           trackDuration: selectedDuration * 60,
-          ttsSpeed: playbackRate,
-          ttsDuration
-        }),
-      });
+                ttsSpeed: playbackRate,
+                ttsDuration
+            }),
+        });
 
-      if (!response.ok) {
+        if (!response.ok) {
         throw new Error("Failed to generate audio");
       }
 
@@ -1546,7 +1580,7 @@ export const Studio: React.FC = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      toast({
+    toast({
         description: "Your affirmation audio has been downloaded.",
       });
     } catch (error) {
@@ -1605,10 +1639,19 @@ export const Studio: React.FC = () => {
         .drop-shadow-green-glow {
           filter: drop-shadow(0 0 3px rgba(34, 197, 94, 0.5));
         }
+
+        @media (max-width: 640px) {
+          .bento-container {
+            grid-template-columns: 1fr;
+          }
+          .bento-container > div {
+            grid-column: span 1 !important;
+          }
+        }
       `}</style>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 flex-grow bento-container">
+      <div className="bento-grid gap-2 auto-rows-auto flex-grow">
         <AnimatedBentoBox 
-          className="col-span-2 row-span-2 animated-bento"
+          className="bento-affirmation-creator"
           gradient="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700"
         >
           <Card className="h-full bg-transparent border-none shadow-none">
@@ -1627,7 +1670,22 @@ export const Studio: React.FC = () => {
         </AnimatedBentoBox>
 
         <AnimatedBentoBox 
-          className="col-span-1 row-span-2 animated-bento"
+          className="bento-generated-affirmations"
+          gradient="bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600"
+        >
+          <Card className="h-full bg-transparent border-none shadow-none">
+            <CardContent className="p-2 sm:p-4 h-full flex flex-col">
+              <AffirmationList 
+                affirmations={generatedAffirmations} 
+                isGenerating={isGenerating}
+                onConvertToSpeech={handleTTSConversion}
+              />
+            </CardContent>
+          </Card>
+        </AnimatedBentoBox>
+
+        <AnimatedBentoBox 
+          className="bento-subliminal-player"
           gradient="bg-gradient-to-br from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-500"
         >
           <Card className="h-full bg-transparent border-none shadow-none">
@@ -1651,7 +1709,7 @@ export const Studio: React.FC = () => {
         </AnimatedBentoBox>
 
         <AnimatedBentoBox 
-          className="col-span-1 row-span-2 animated-bento"
+          className="bento-audio-layer"
           gradient="bg-gradient-to-br from-gray-400 to-gray-500 dark:from-gray-500 dark:to-gray-400"
         >
           <Card className="h-full bg-transparent border-none shadow-none">
@@ -1666,22 +1724,7 @@ export const Studio: React.FC = () => {
         </AnimatedBentoBox>
 
         <AnimatedBentoBox 
-          className="col-span-2 row-span-2 animated-bento"
-          gradient="bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600"
-        >
-          <Card className="h-full bg-transparent border-none shadow-none">
-            <CardContent className="p-2 sm:p-4 h-full flex flex-col">
-              <AffirmationList 
-                affirmations={generatedAffirmations} 
-                isGenerating={isGenerating}
-                onConvertToSpeech={handleTTSConversion}
-              />
-            </CardContent>
-          </Card>
-        </AnimatedBentoBox>
-
-        <AnimatedBentoBox 
-          className="col-span-2 row-span-2 animated-bento"
+          className="bento-audio-controls"
           gradient="bg-gradient-to-br from-gray-500 to-gray-600 dark:from-gray-400 dark:to-gray-300"
         >
           <Card className="h-full overflow-hidden bg-transparent border-none shadow-none">
