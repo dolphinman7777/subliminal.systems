@@ -77,3 +77,25 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom mobile ordering */
+@media (max-width: 767px) {
+  .bento-container {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .bento-item {
+    width: 100% !important;
+  }
+
+  .bento-item-affirmations {
+    order: 2;
+  }
+
+  /* Add more order classes as needed for other components */
+  .bento-item-1 { order: 1; }
+  .bento-item-3 { order: 3; }
+  .bento-item-4 { order: 4; }
+  /* ... and so on ... */
+}

@@ -7,6 +7,8 @@ import { useToast } from "@/hooks/use-toast"
 import { useClerk } from "@clerk/nextjs";
 import { LogOut, Download, Loader2, CheckCircle, Music } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
+import DotPattern from "@/components/ui/dot-pattern";
 
 export default function PaymentSuccess() {
   const router = useRouter()
@@ -131,55 +133,26 @@ export default function PaymentSuccess() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      <motion.div 
-        initial={{ opacity: 0 }} 
-        animate={{ opacity: 1 }} 
-        exit={{ opacity: 0 }}
-        className="relative z-20 flex flex-col items-center justify-center min-h-screen p-4"
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
+      <DotPattern className="absolute inset-0 z-0 opacity-50" />
+      
+      {/* Logout Button */}
+      <Button 
+        onClick={handleLogout}
+        className="absolute top-4 right-4 bg-red-500 hover:bg-red-600 text-white"
       >
-        <AnimatePresence>
-          {showConfetti && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 pointer-events-none"
-            >
-              {[...Array(50)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  className="absolute w-2 h-2 bg-blue-500 rounded-full"
-                  initial={{
-                    top: '0%',
-                    left: `${Math.random() * 100}%`,
-                    scale: 0,
-                  }}
-                  animate={{
-                    top: '100%',
-                    scale: 1,
-                    transition: {
-                      duration: 5,
-                      repeat: Infinity,
-                      delay: Math.random() * 5,
-                    },
-                  }}
-                />
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <LogOut className="mr-2 h-4 w-4" /> Logout
+      </Button>
 
-        <Button 
-          onClick={handleLogout}
-          className="absolute top-4 right-4 bg-red-500 hover:bg-red-600 text-white"
-        >
-          <LogOut className="mr-2 h-4 w-4" /> Logout
-        </Button>
-
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9 }} 
+        animate={{ opacity: 1, scale: 1 }} 
+        exit={{ opacity: 0, scale: 0.9 }}
+        className="relative z-20 bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 max-w-md w-full"
+      >
         <motion.h1 
           className="text-4xl font-bold mb-4 text-center bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-400 dark:to-indigo-400"
-          initial={{ y: -50, opacity: 0 }}
+          initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
@@ -188,7 +161,7 @@ export default function PaymentSuccess() {
         
         <motion.div
           className="text-center mb-8"
-          initial={{ y: 50, opacity: 0 }}
+          initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.4 }}
         >
@@ -199,47 +172,29 @@ export default function PaymentSuccess() {
         <motion.div
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
+          className="mb-8"
         >
-          <motion.div
-            animate={{
-              scale: [1, 1.05, 1],
-              boxShadow: [
-                '0px 0px 0px 0px rgba(147, 51, 234, 0.4)',
-                '0px 0px 20px 10px rgba(147, 51, 234, 0.2)',
-                '0px 0px 0px 0px rgba(147, 51, 234, 0.4)'
-              ]
-            }}
-            transition={{
-              duration: 2,
-              ease: "easeInOut",
-              times: [0, 0.5, 1],
-              repeat: Infinity,
-              repeatType: "reverse"
-            }}
-            className="rounded-full overflow-hidden"
+          <Button 
+            onClick={handleDownloadAudio}
+            disabled={isLoading || !audioDetails}
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all duration-300 ease-in-out flex items-center justify-center text-lg"
           >
-            <Button 
-              onClick={handleDownloadAudio}
-              disabled={isLoading || !audioDetails}
-              className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all duration-300 ease-in-out flex items-center text-lg"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-6 w-6 animate-spin" />
-                  Preparing Download...
-                </>
-              ) : (
-                <>
-                  <Download className="mr-2 h-6 w-6" />
-                  Download Your Audio
-                </>
-              )}
-            </Button>
-          </motion.div>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                Preparing Download...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-6 w-6" />
+                Download Your Audio
+              </>
+            )}
+          </Button>
         </motion.div>
 
         <motion.div
-          className="mt-8 text-center"
+          className="text-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
@@ -248,6 +203,16 @@ export default function PaymentSuccess() {
           <p className="text-gray-600 dark:text-gray-400">Your personalized audio is ready!</p>
         </motion.div>
       </motion.div>
+
+      <div className="absolute bottom-4 left-4">
+        <Image
+          src="/head.svg"
+          alt="Subliminal Studio Logo"
+          width={150}
+          height={150}
+          className="drop-shadow-[0_0_0.3rem_#3b82f6]"
+        />
+      </div>
     </div>
   )
 }

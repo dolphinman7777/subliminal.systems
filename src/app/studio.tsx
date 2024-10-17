@@ -368,11 +368,11 @@ function AffirmationSearch({
           placeholder="Enter your prompt..."
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          className="flex-grow rounded-full" // Added rounded-full here
+          className="flex-grow rounded-full border-2 border-gray-400 dark:border-gray-600" // Updated border class
         />
         <Button 
           onClick={() => handleAddPrompt(prompt)}
-          className="bg-purple-500 hover:bg-purple-600 text-white font-bold transition-all duration-300 ease-in-out rounded-full" // Added rounded-full here
+          className="bg-purple-500 hover:bg-purple-600 text-white font-bold transition-all duration-300 ease-in-out rounded-full"
         >
           Add
         </Button>
@@ -381,7 +381,7 @@ function AffirmationSearch({
             <Button 
               variant="outline" 
               size="icon" 
-              className="relative overflow-hidden group rounded-full" // Added rounded-full here
+              className="relative overflow-hidden group rounded-full"
             >
               <Sparkles className="h-4 w-4 relative z-10 text-purple-600" />
               <div className="absolute inset-0 bg-purple-400 rounded-full blur-md opacity-75 group-hover:opacity-100 transition-opacity duration-300 animate-pulse"></div>
