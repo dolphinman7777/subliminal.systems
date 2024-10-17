@@ -1,0 +1,14 @@
+echo "node_modules/
+.next/
+.env.local
+.DS_Store
+temp/" > .gitignore
+
+node_modules
+*.node
+node_modules
+*.node
+node_modules
+*.node
+node_modules
+*.node
