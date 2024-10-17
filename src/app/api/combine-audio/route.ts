@@ -154,10 +154,9 @@ export async function POST(request: Request) {
         // Ensure atempoFilters is not empty
         const atempoFilterString = atempoFilters.length > 0 ? atempoFilters.join(',') + ',' : '';
 
-        // Calculate the number of loops needed
-        const loopCount = Math.ceil(trackDuration / ttsDuration);
+        // Calculate the number of loops needed to reach the desired track duration
+        const loopCount = Math.ceil(trackDuration / (ttsDuration / ttsSpeed));
 
-        // Update the FFmpeg command to loop the TTS audio for the full duration
         const command = [
           'ffmpeg',
           '-i', `"${ttsPath}"`,
@@ -166,9 +165,10 @@ export async function POST(request: Request) {
           '-filter_complex',
           `"[0:a]${atempoFilterString}volume=${ttsVolumeDb}dB,aloop=loop=${loopCount}:size=${Math.floor(ttsDuration * 48000)}[a];` +
           `[1:a]volume=${backingVolumeDb}dB[b];` +
-          `[a][b]amix=inputs=2:duration=longest:dropout_transition=2,asetpts=PTS-STARTPTS"`,
-          '-t', `${trackDuration}`,
+          `[a][b]amix=inputs=2:duration=first:dropout_transition=2,asetpts=PTS-STARTPTS,atrim=0:${trackDuration}"`,
           '-ar', '48000',
+          '-acodec', 'libmp3lame',
+          '-b:a', '192k',
           `"${outputPath}"`
         ].join(' ');
 
@@ -183,7 +183,7 @@ export async function POST(request: Request) {
             throw error;
         }
     };
-    const trackDuration = 900; // Set track duration to 900 seconds (15 minutes)
+    const trackDuration = 900; // 15 minutes in seconds
     // Call the mixAudio function with the correct duration
     await mixAudio(ttsAudioPath, backingTrackPath, ttsVolume, backingTrackVolume, trackDuration, ttsSpeed, ttsDuration, outputPath);
     console.log('Audio mixed successfully');
@@ -308,18 +308,15 @@ async function mixAudio(
     ttsDuration
   });
 
-  const ttsVolumeDb = Math.log10(ttsVolume) * 20; // Convert to dB
-  const backingVolumeDb = Math.log10(backingTrackVolume) * 20; // Convert to dB
+  const ttsVolumeDb = Math.log10(ttsVolume) * 20;
+  const backingVolumeDb = Math.log10(backingTrackVolume) * 20;
 
   const atempoFilters = getAtempoFilters(ttsSpeed);
-  
-  // Ensure atempoFilters is not empty
   const atempoFilterString = atempoFilters.length > 0 ? atempoFilters.join(',') + ',' : '';
 
-  // Calculate the number of loops needed
-  const loopCount = Math.ceil(trackDuration / ttsDuration);
+  // Calculate the number of loops needed to reach the desired track duration
+  const loopCount = Math.ceil(trackDuration / (ttsDuration / ttsSpeed));
 
-  // Update the FFmpeg command to loop the TTS audio for the full duration
   const command = [
     'ffmpeg',
     '-i', `"${ttsPath}"`,
@@ -328,22 +325,26 @@ async function mixAudio(
     '-filter_complex',
     `"[0:a]${atempoFilterString}volume=${ttsVolumeDb}dB,aloop=loop=${loopCount}:size=${Math.floor(ttsDuration * 48000)}[a];` +
     `[1:a]volume=${backingVolumeDb}dB[b];` +
-    `[a][b]amix=inputs=2:duration=longest:dropout_transition=2,asetpts=PTS-STARTPTS"`,
-    '-t', `${trackDuration}`,
+    `[a][b]amix=inputs=2:duration=first:dropout_transition=2,asetpts=PTS-STARTPTS,atrim=0:${trackDuration}"`,
     '-ar', '48000',
+    '-acodec', 'libmp3lame',
+    '-b:a', '192k',
     `"${outputPath}"`
   ].join(' ');
 
   console.log('FFmpeg command:', command);
 
-  try {
-    const { stdout, stderr } = await execAsync(command);
-    console.log('FFmpeg stdout:', stdout);
-    console.log('FFmpeg stderr:', stderr);
-  } catch (error) {
-    console.error('Error during FFmpeg processing:', error);
-    throw error;
-  }
+  return new Promise((resolve, reject) => {
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        console.error('FFmpeg stderr:', stderr);
+        reject(error);
+      } else {
+        console.log('FFmpeg stdout:', stdout);
+        resolve();
+      }
+    });
+  });
 }
 
 // Add this function to create a silent audio file
