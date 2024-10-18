@@ -947,14 +947,14 @@ export const Studio: React.FC = () => {
   };
 
   const handleVolumeChange = (newVolume: number) => {
-    setTtsVolume(newVolume); // Update the state with the new volume
+    setTtsVolume(newVolume);
     if (audioRef.current) {
-        audioRef.current.volume = newVolume; // Set the volume on the audio element
+      audioRef.current.volume = newVolume;
     }
     if (gainNodeRef.current && audioContextRef.current) {
-        gainNodeRef.current.gain.setValueAtTime(newVolume, audioContextRef.current.currentTime); // Set the volume on the gain node
+      gainNodeRef.current.gain.setValueAtTime(newVolume, audioContextRef.current.currentTime);
     }
-    console.log('TTS Volume set to:', newVolume); // Debugging line
+    console.log('TTS Volume set to:', newVolume);
   };
 
   useEffect(() => {
@@ -1291,7 +1291,7 @@ export const Studio: React.FC = () => {
         body: JSON.stringify({
           text: generatedAffirmations.join('. '),
           voice: ttsVoice,
-          volume: ttsVolume // Add this line to pass the volume
+          volume: ttsVolume // Now ttsVolume is defined and can be used here
         }),
       });
 
