@@ -23,11 +23,9 @@
         "name": "next"
       }
     ],
-    "types": ["@types/node", "@types/react", "@types/react-dom"],
     "paths": {
       "@/*": ["./src/*"]
-    },
-    "baseUrl": "."
+    }
   },
   "include": [
     "next-env.d.ts",

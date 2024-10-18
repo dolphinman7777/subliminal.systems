@@ -524,7 +524,21 @@ function AffirmationSearch({
   )
 }
 
-function SubliminalAudioPlayer({ audioUrl, isLoading, trackDuration, ttsDuration, audioRef, isPlaying, onPlayPause, currentTime, volume, onVolumeChange, playbackRate }: { 
+function SubliminalAudioPlayer({ 
+  audioUrl, 
+  isLoading, 
+  trackDuration, 
+  ttsDuration, 
+  audioRef, 
+  isPlaying, 
+  onPlayPause, 
+  currentTime, 
+  volume, 
+  onVolumeChange, 
+  playbackRate,
+  gainNodeRef,  // Add this prop
+  audioContextRef  // Add this prop
+}: { 
   audioUrl: string | null, 
   isLoading: boolean,
   trackDuration: number,
@@ -536,6 +550,8 @@ function SubliminalAudioPlayer({ audioUrl, isLoading, trackDuration, ttsDuration
   volume: number,
   onVolumeChange: (value: number) => void,
   playbackRate: number,
+  gainNodeRef: React.RefObject<GainNode | null>,  // Add this type
+  audioContextRef: React.RefObject<AudioContext | null>  // Add this type
 }) {
   const { toast } = useToast();
 
@@ -553,12 +569,14 @@ function SubliminalAudioPlayer({ audioUrl, isLoading, trackDuration, ttsDuration
   }, [playbackRate]);
 
   const handleVolumeChange = (newVolume: number) => {
-    onVolumeChange(newVolume); // Use the onVolumeChange prop instead of setTtsVolume
+    onVolumeChange(newVolume);
     if (audioRef.current) {
-      audioRef.current.volume = newVolume; // Set the volume on the audio element
+      audioRef.current.volume = newVolume;
     }
-    if (gainNodeRef.current && audioContextRef.current) {
-      gainNodeRef.current.gain.setValueAtTime(newVolume, audioContextRef.current.currentTime); // Set the volume on the gain node
+    const gainNode = gainNodeRef.current;
+    const audioContext = audioContextRef.current;
+    if (gainNode && audioContext) {
+      gainNode.gain.setValueAtTime(newVolume, audioContext.currentTime);
     }
   };
 
@@ -816,7 +834,7 @@ export const Studio: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLooping, setIsLooping] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const [prompt, setPrompt] = useState("");
@@ -875,6 +893,7 @@ export const Studio: React.FC = () => {
     if (typeof window !== 'undefined') {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       gainNodeRef.current = audioContextRef.current.createGain();
+      gainNodeRef.current.connect(audioContextRef.current.destination);
     }
 
     return () => {
@@ -955,10 +974,12 @@ export const Studio: React.FC = () => {
   const handleVolumeChange = (newVolume: number) => {
     setVolume(newVolume);
     if (audioRef.current) {
-      audioRef.current.volume = newVolume; // Set the volume on the audio element
+      audioRef.current.volume = newVolume;
     }
-    if (gainNodeRef.current && audioContextRef.current) {
-      gainNodeRef.current.gain.setValueAtTime(newVolume, audioContextRef.current.currentTime); // Set the volume on the gain node
+    const gainNode = gainNodeRef.current;
+    const audioContext = audioContextRef.current;
+    if (gainNode && audioContext) {
+      gainNode.gain.setValueAtTime(newVolume, audioContext.currentTime);
     }
   };
 
@@ -1718,6 +1739,8 @@ export const Studio: React.FC = () => {
                 volume={volume}
                 onVolumeChange={handleVolumeChange}
                 playbackRate={playbackRate}
+                gainNodeRef={gainNodeRef}  // Add this
+                audioContextRef={audioContextRef}  // Add this
               />
             </CardContent>
           </Card>
