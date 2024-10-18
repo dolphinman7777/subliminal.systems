@@ -86,29 +86,29 @@ const speedOptions = [
 ];
 
 const Notepad: React.FC = () => {
-  const [notes, setNotes] = useState<string>('');
+  const [script, setScript] = useState<string>('');
 
   useEffect(() => {
-    const savedNotes = localStorage.getItem('affirmationNotes');
-    if (savedNotes) {
-      setNotes(savedNotes);
+    const savedScript = localStorage.getItem('affirmationScript');
+    if (savedScript) {
+      setScript(savedScript);
     }
   }, []);
 
-  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newNotes = e.target.value;
-    setNotes(newNotes);
-    localStorage.setItem('affirmationNotes', newNotes);
+  const handleScriptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newScript = e.target.value;
+    setScript(newScript);
+    localStorage.setItem('affirmationScript', newScript);
   };
 
   return (
-    <div className="flex flex-col h-full scale-98"> {/* Added scale-98 here */}
-      <h3 className="text-sm font-semibold mb-2">Notes</h3>
+    <div className="flex flex-col h-full scale-98 relative">
+      <h3 className="text-sm font-semibold mb-2">Script</h3>
       <textarea
         className="w-full h-full p-2 text-sm border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 overflow-y-auto"
-        value={notes}
-        onChange={handleNotesChange}
-        placeholder="Write your notes here..."
+        value={script}
+        onChange={handleScriptChange}
+        placeholder="Write your script here..."
       />
     </div>
   );
@@ -859,6 +859,8 @@ export const Studio: React.FC = () => {
   const [selectedDuration, setSelectedDuration] = useState(15); // Default to 15 minutes
   const [ttsAudioDuration, setTtsAudioDuration] = useState(30); // Default to 30 seconds
 
+  const [isWarningOpen, setIsWarningOpen] = useState(false);
+
   useEffect(() => {
     return () => {
       if (audioContextRef.current) {
@@ -1170,6 +1172,11 @@ export const Studio: React.FC = () => {
   };
 
   const handlePayment = async (method: 'PayPal' | 'Card') => {
+    if (!selectedBackingTrack) {
+      setIsWarningOpen(true);
+      return;
+    }
+
     saveAudioDetailsToLocalStorage();
     
     if (method === 'Card') {
@@ -1893,6 +1900,23 @@ export const Studio: React.FC = () => {
           </Button>
         </div>
       )}
+
+      {/* Warning Dialog */}
+      <Dialog open={isWarningOpen} onOpenChange={setIsWarningOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Backing Track Required</DialogTitle>
+            <DialogDescription>
+              Please select a backing track before proceeding with payment or download.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 flex justify-end">
+            <Button onClick={() => setIsWarningOpen(false)}>
+              OK
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
