@@ -948,14 +948,12 @@ export const Studio: React.FC = () => {
   };
 
   const handleVolumeChange = (newVolume: number) => {
-    setTtsVolume(newVolume);
     if (audioRef.current) {
-      audioRef.current.volume = newVolume;
+      audioRef.current.volume = newVolume; // Set the volume on the audio element
     }
     if (gainNodeRef.current && audioContextRef.current) {
-      gainNodeRef.current.gain.setValueAtTime(newVolume, audioContextRef.current.currentTime);
+      gainNodeRef.current.gain.setValueAtTime(newVolume, audioContextRef.current.currentTime); // Set the volume on the gain node
     }
-    console.log('TTS Volume set to:', newVolume);
   };
 
   useEffect(() => {
