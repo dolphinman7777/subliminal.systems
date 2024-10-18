@@ -11,6 +11,7 @@ import DotPattern from "@/components/ui/dot-pattern"
 import { SignUpButton, SignInButton, useAuth } from "@clerk/nextjs";
 import { useRouter } from 'next/navigation';
 import { LucideIcon } from 'lucide-react'; // Add this import
+import { useClerk } from '@clerk/nextjs';
 
 // Add this array of sentences at the top of your file, outside of any component
 const mindSoftwareSentences = [
@@ -156,6 +157,7 @@ export default function HomePage() {
   const router = useRouter();
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   const { isLoaded, userId } = useAuth();
+  const { openSignIn, openSignUp } = useClerk();
 
   useEffect(() => {
     if (isLoaded && userId) {
@@ -205,12 +207,18 @@ export default function HomePage() {
             </div>
           </Link>
           <nav className="flex gap-4">
-            <SignInButton mode="modal" afterSignInUrl="/studio" className="px-4 py-2 bg-white text-black border border-black rounded hover:bg-gray-100 transition-colors">
+            <button
+              className="px-4 py-2 bg-white text-black border border-black rounded hover:bg-gray-100 transition-colors"
+              onClick={() => openSignIn({ redirectUrl: '/studio' })}
+            >
               Log in
-            </SignInButton>
-            <SignUpButton mode="modal" afterSignUpUrl="/studio" className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800 transition-colors">
+            </button>
+            <button
+              className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800 transition-colors"
+              onClick={() => openSignUp({ redirectUrl: '/studio' })}
+            >
               Sign up
-            </SignUpButton>
+            </button>
           </nav>
         </header>
         <main className="flex-1 flex flex-col items-center justify-start py-20 mt-32">
