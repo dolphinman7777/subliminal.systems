@@ -1,31 +1,23 @@
 "use client"
 
-import { useToast } from "@/hooks/use-toast"
 import {
   Toast,
-  ToastActionElement,
-  ToastProps,
-  ToastProvider,
-  ToastViewport,
-  ToastTitle,
-  ToastDescription,
   ToastClose,
+  ToastDescription,
+  ToastProvider,
+  ToastTitle,
+  ToastViewport,
 } from "@/components/ui/toast"
-
-// Update the ExtendedToastProps interface
-interface ExtendedToastProps extends Omit<ToastProps, 'id'> {
-  id: string;
-  title?: string;
-  description?: string;
-  action?: ToastActionElement;
-}
+import { useToast } from "@/components/ui/use-toast"
 
 export function Toaster() {
   const { toasts } = useToast()
 
   return (
     <ToastProvider>
-      {toasts.map(({ id, title, description, action, ...props }) => {
+      {toasts.map((toast) => {
+        const { id, title, description, action, ...props } = toast
+
         return (
           <Toast key={id} {...props}>
             <div className="grid gap-1">
