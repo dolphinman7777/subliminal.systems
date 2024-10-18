@@ -121,7 +121,8 @@ function AffirmationSearch({
   setGeneratedAffirmations,
   setAffirmationAudioUrl,
   tokenBalance,
-  setTokenBalance
+  setTokenBalance,
+  ttsVolume // Add this prop
 }: { 
   onAffirmationGenerated: (affirmations: string[], audioUrl: string) => void;
   isGenerating: boolean;
@@ -130,6 +131,7 @@ function AffirmationSearch({
   setAffirmationAudioUrl: React.Dispatch<React.SetStateAction<string | null>>;
   tokenBalance: number;
   setTokenBalance: React.Dispatch<React.SetStateAction<number>>;
+  ttsVolume: number; // Add this type definition
 }) {
   const { user } = useUser();
   const [prompt, setPrompt] = useState('')
@@ -1673,6 +1675,7 @@ export const Studio: React.FC = () => {
                 setAffirmationAudioUrl={setAffirmationAudioUrl}
                 tokenBalance={tokenBalance}
                 setTokenBalance={setTokenBalance}
+                ttsVolume={ttsVolume} // Pass the ttsVolume prop
               />
             </CardContent>
           </Card>
