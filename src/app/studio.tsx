@@ -936,14 +936,11 @@ export const Studio: React.FC = () => {
   };
 
   const handleVolumeChange = (newVolume: number) => {
-    setTtsVolume(newVolume); // Update the state with the new volume
+    setTtsVolume(newVolume);
     if (audioRef.current) {
-        audioRef.current.volume = newVolume; // Set the volume on the audio element
+      audioRef.current.volume = newVolume;
     }
-    if (gainNodeRef.current && audioContextRef.current) {
-        gainNodeRef.current.gain.setValueAtTime(newVolume, audioContextRef.current.currentTime); // Set the volume on the gain node
-    }
-    console.log('TTS Volume set to:', newVolume); // Debugging line
+    console.log('TTS Volume set to:', newVolume);
   };
 
   useEffect(() => {
@@ -1701,7 +1698,7 @@ export const Studio: React.FC = () => {
                 onPlayPause={handlePlayPause}
                 currentTime={currentTime}
                 volume={ttsVolume}
-                onVolumeChange={handleTtsVolumeChange}
+                onVolumeChange={handleVolumeChange}
                 playbackRate={playbackRate}
               />
             </CardContent>
