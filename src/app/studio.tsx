@@ -816,7 +816,7 @@ export const Studio: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLooping, setIsLooping] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const [prompt, setPrompt] = useState("");
@@ -872,6 +872,11 @@ export const Studio: React.FC = () => {
   const [isWarningOpen, setIsWarningOpen] = useState(false);
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      gainNodeRef.current = audioContextRef.current.createGain();
+    }
+
     return () => {
       if (audioContextRef.current) {
         audioContextRef.current.close();
@@ -950,10 +955,10 @@ export const Studio: React.FC = () => {
   const handleVolumeChange = (newVolume: number) => {
     setVolume(newVolume);
     if (audioRef.current) {
-      audioRef.current.volume = newVolume;
+      audioRef.current.volume = newVolume; // Set the volume on the audio element
     }
     if (gainNodeRef.current && audioContextRef.current) {
-      gainNodeRef.current.gain.setValueAtTime(newVolume, audioContextRef.current.currentTime);
+      gainNodeRef.current.gain.setValueAtTime(newVolume, audioContextRef.current.currentTime); // Set the volume on the gain node
     }
   };
 
