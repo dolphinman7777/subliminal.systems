@@ -10,6 +10,7 @@ import HyperText from "@/components/ui/hyper-text"
 import DotPattern from "@/components/ui/dot-pattern"
 import { SignUpButton, SignInButton, useAuth } from "@clerk/nextjs";
 import { useRouter } from 'next/navigation';
+import { LucideIcon } from 'lucide-react'; // Add this import
 
 // Add this array of sentences at the top of your file, outside of any component
 const mindSoftwareSentences = [
@@ -84,7 +85,7 @@ interface BentoCardProps {
   name: string;
   className: string;
   background: React.ReactNode;
-  Icon: React.ElementType; // Changed from IconType
+  Icon: LucideIcon; // Change this line
   description: React.ReactNode;
   href: string;
   cta: string;
@@ -94,7 +95,7 @@ const BentoCard: React.FC<BentoCardProps> = ({
   name,
   className,
   background,
-  Icon, // This should be capitalized as it's a component
+  Icon,
   description,
   href,
   cta,

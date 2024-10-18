@@ -5,7 +5,7 @@ import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { PlayIcon, PauseIcon, SkipBackIcon, SkipForwardIcon, Clock, SlidersHorizontal, RepeatIcon, Volume2, X, Sparkles, ChevronDown, Loader2, Download, CreditCard, LogOut, Settings } from "lucide-react"
+import { PlayIcon, PauseIcon, SkipBackIcon, SkipForwardIcon, Clock, SlidersHorizontal, RepeatIcon, Volume2, X, Sparkles, ChevronDown, Loader2, Download, CreditCard, LogOut } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import {
   DropdownMenu,
@@ -822,7 +822,6 @@ export const Studio: React.FC = () => {
   const [isTtsLoading, setIsTtsLoading] = useState(false);
 
   const [isSplit, setIsSplit] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [ttsVoice, setTtsVoice] = useState('Joanna');
   const [ttsAudioUrl, setTtsAudioUrl] = useState<string | null>(null);
 
@@ -938,11 +937,14 @@ export const Studio: React.FC = () => {
   };
 
   const handleVolumeChange = (newVolume: number) => {
-    setTtsVolume(newVolume);
+    setTtsVolume(newVolume); // Update the state with the new volume
     if (audioRef.current) {
-      audioRef.current.volume = newVolume;
+        audioRef.current.volume = newVolume; // Set the volume on the audio element
     }
-    console.log('TTS Volume set to:', newVolume);
+    if (gainNodeRef.current && audioContextRef.current) {
+        gainNodeRef.current.gain.setValueAtTime(newVolume, audioContextRef.current.currentTime); // Set the volume on the gain node
+    }
+    console.log('TTS Volume set to:', newVolume); // Debugging line
   };
 
   useEffect(() => {
@@ -1101,14 +1103,6 @@ export const Studio: React.FC = () => {
 
   const handlePlay = () => {
     setIsPlaying(!isPlaying);
-  };
-
-  const handleOpenSettings = () => {
-    setIsSettingsOpen(true);
-  };
-
-  const handleCloseSettings = () => {
-    setIsSettingsOpen(false);
   };
 
   const handleLogout = async () => {
@@ -1820,14 +1814,6 @@ export const Studio: React.FC = () => {
       <div className="flex justify-between items-center mt-2">
         <div className="flex items-center space-x-2">
           <Button
-            onClick={handleOpenSettings}
-            className="bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 text-gray-800 dark:text-white font-bold rounded-full transition-all duration-300 ease-in-out flex items-center justify-center text-sm hover:from-gray-300 hover:to-gray-400 dark:hover:from-gray-600 dark:hover:to-gray-500 hover:shadow-blue-300/50 dark:hover:shadow-blue-500/30"
-            size="sm"
-          >
-            <Settings className="mr-1 h-4 w-4" />
-            Settings
-          </Button>
-          <Button
             onClick={handleLogout}
             className="bg-gradient-to-r from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-500 text-gray-800 dark:text-white font-bold rounded-full transition-all duration-300 ease-in-out flex items-center justify-center text-sm hover:from-gray-400 hover:to-gray-500 dark:hover:from-gray-500 dark:hover:to-gray-400 hover:shadow-blue-300/50 dark:hover:shadow-blue-500/30"
             size="sm"
@@ -1866,27 +1852,6 @@ export const Studio: React.FC = () => {
           Generations remaining today: {10 - generationCount}
         </div>
       )}
-
-      {/* Settings Dialog */}
-      <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Settings</DialogTitle>
-            <DialogDescription>
-              Adjust your application settings here.
-            </DialogDescription>
-          </DialogHeader>
-          {/* Add your settings options here */}
-          <div className="mt-4">
-            <p>Settings options will go here.</p>
-            {/* Example: 
-            <Switch id="dark-mode" checked={isDarkMode} onCheckedChange={toggleDarkMode}>
-              Dark Mode
-            </Switch>
-            */}
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Add this near the bottom of your JSX, adjust the positioning as needed */}
       {isPaymentCompleted && (
