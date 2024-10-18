@@ -889,6 +889,8 @@ export const Studio: React.FC = () => {
 
   const [isWarningOpen, setIsWarningOpen] = useState(false);
 
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -1304,6 +1306,7 @@ export const Studio: React.FC = () => {
 
   const handleTTSConversion = async () => {
     setIsTtsLoading(true);
+    setError(null);
     toast({
       description: "Starting TTS conversion...",
     });
@@ -1317,7 +1320,7 @@ export const Studio: React.FC = () => {
         body: JSON.stringify({
           text: generatedAffirmations.join('. '),
           voice: ttsVoice,
-          volume: ttsVolume // Now ttsVolume is defined and can be used here
+          volume: ttsVolume
         }),
       });
 
@@ -1333,6 +1336,7 @@ export const Studio: React.FC = () => {
       });
     } catch (error) {
       console.error("TTS conversion failed:", error);
+      setError(error instanceof Error ? error.message : 'An unknown error occurred');
       toast({
         description: "TTS conversion failed. Please try again.",
         variant: "destructive",
