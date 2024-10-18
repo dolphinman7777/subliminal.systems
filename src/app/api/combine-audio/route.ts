@@ -4,7 +4,7 @@ import path from 'path';
 import os from 'os';
 import { promisify } from 'util';
 import { exec } from 'child_process';
-import { PollyClient, SynthesizeSpeechCommand, Engine, LanguageCode, OutputFormat } from "@aws-sdk/client-polly";
+import { PollyClient, SynthesizeSpeechCommand, Engine, LanguageCode, OutputFormat, TextType, VoiceId } from "@aws-sdk/client-polly";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 const execAsync = promisify(exec);
@@ -17,7 +17,13 @@ const polly = new PollyClient({
   },
 });
 
-const s3Client = new S3Client({ region: process.env.AWS_REGION });
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  },
+});
 
 // Helper function to split ttsSpeed into multiple atempo filters
 function getAtempoFilters(speed: number): string[] {
@@ -227,9 +233,9 @@ async function generatePollyTTS(text: string): Promise<string> {
       Engine: "neural" as Engine,
       LanguageCode: "en-US" as LanguageCode,
       Text: chunk,
-      TextType: "text",
+      TextType: "text" as TextType,
       OutputFormat: "mp3" as OutputFormat,
-      VoiceId: "Joanna",
+      VoiceId: "Joanna" as VoiceId,
     };
 
     const command = new SynthesizeSpeechCommand(params);
@@ -254,14 +260,7 @@ async function generatePollyTTS(text: string): Promise<string> {
     audioUrls.push(`https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`);
   }
 
-  // If multiple audio files were generated, we need to concatenate them
-  if (audioUrls.length > 1) {
-    // Implement concatenation logic here
-    // For now, we'll just return the first URL as a placeholder
-    console.warn('Multiple audio files generated. Concatenation not implemented yet.');
-  }
-
-  return audioUrls[0];
+  return audioUrls.join(',');
 }
 
 async function downloadAudio(url: string, prefix: string): Promise<string> {
@@ -284,9 +283,13 @@ async function downloadAudio(url: string, prefix: string): Promise<string> {
       await fs.writeFile(tempPath, Buffer.from(buffer));
       return tempPath;
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error(`Error downloading ${prefix} audio:`, error);
-    throw new Error(`Failed to download ${prefix} audio: ${error.message}`);
+    if (error instanceof Error) {
+      throw new Error(`Failed to download ${prefix} audio: ${error.message}`);
+    } else {
+      throw new Error(`Failed to download ${prefix} audio: Unknown error`);
+    }
   }
 }
 

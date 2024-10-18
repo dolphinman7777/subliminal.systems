@@ -4,7 +4,8 @@ import { promisify } from 'util';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import { PollyClient, SynthesizeSpeechCommand, Engine, LanguageCode, OutputFormat, TextType } from "@aws-sdk/client-polly";
+import { PollyClient, SynthesizeSpeechCommand, Engine, LanguageCode, OutputFormat, TextType, VoiceId } from "@aws-sdk/client-polly";
+import { Readable } from 'stream';
 
 const execAsync = promisify(exec);
 
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
     const params = {
       Text: text,
       OutputFormat: 'mp3' as OutputFormat,
-      VoiceId: voice,
+      VoiceId: voice as VoiceId,
       Engine: 'neural' as Engine,
       LanguageCode: "en-US" as LanguageCode,
       TextType: "text" as TextType
@@ -38,10 +39,21 @@ export async function POST(request: Request) {
     
     console.log('Polly response:', response);
 
-    if (response.AudioStream instanceof Uint8Array) {
+    if (response.AudioStream instanceof Readable) {
       // Save the audio to a temporary file
       const tempFile = path.join(os.tmpdir(), `tts_${Date.now()}.mp3`);
-      await fs.writeFile(tempFile, response.AudioStream);
+      const fileHandle = await fs.open(tempFile, 'w');
+      
+      try {
+        const chunks: Buffer[] = [];
+        for await (const chunk of response.AudioStream) {
+          chunks.push(Buffer.from(chunk));
+        }
+        const buffer = Buffer.concat(chunks);
+        await fs.writeFile(fileHandle, buffer);
+      } finally {
+        await fileHandle.close();
+      }
 
       // Adjust volume using ffmpeg
       const outputFile = path.join(os.tmpdir(), `tts_adjusted_${Date.now()}.mp3`);
@@ -60,8 +72,8 @@ export async function POST(request: Request) {
       const audioUrl = `data:audio/mp3;base64,${audioBase64}`;
       return NextResponse.json({ audioUrl });
     } else {
-      console.error('AudioStream is not a Uint8Array:', response.AudioStream);
-      throw new Error('Failed to generate audio: AudioStream is not a Uint8Array');
+      console.error('AudioStream is not a Readable stream:', response.AudioStream);
+      throw new Error('Failed to generate audio: AudioStream is not a Readable stream');
     }
   } catch (error) {
     console.error('Error in TTS conversion:', error);
