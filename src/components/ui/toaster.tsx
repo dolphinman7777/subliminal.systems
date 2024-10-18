@@ -16,7 +16,7 @@ export function Toaster() {
   return (
     <ToastProvider>
       {toasts.map((toast) => {
-        const { id, title, description, action, ...props } = toast
+        const { id, title, description, ...props } = toast
 
         return (
           <Toast key={id} {...props}>
@@ -26,7 +26,6 @@ export function Toaster() {
                 <ToastDescription>{description}</ToastDescription>
               )}
             </div>
-            {action}
             <ToastClose />
           </Toast>
         )
