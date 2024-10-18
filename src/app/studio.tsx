@@ -320,32 +320,42 @@ function AffirmationSearch({
       setTokenBalance(prevBalance => prevBalance - totalTokensUsed);
       setClientCache(`affirmation:${prompts.join(',')}`, newAffirmations, 60);
 
-      // Continue with TTS conversion...
-      console.log('Generating TTS...');
-      const ttsResponse = await fetch('/api/text-to-speech', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          text: newAffirmations.join(' '),
-          volume: ttsVolume // Add this line to pass the volume
-        }),
-      });
+      // TTS conversion
+      setIsTtsLoading(true);
+      try {
+        const response = await fetch('/api/tts', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            text: newAffirmations.join(' '),
+            volume: ttsVolume // Now ttsVolume is defined and can be used here
+          }),
+        });
 
-      if (!ttsResponse.ok) {
-        const errorData = await ttsResponse.json();
-        console.error('Failed to generate TTS:', errorData);
-        throw new Error(`Failed to generate TTS: ${errorData.message || ttsResponse.statusText}`);
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Failed to generate TTS:', errorData);
+          throw new Error(`Failed to generate TTS: ${errorData.message || response.statusText}`);
+        }
+
+        const { audioUrl } = await response.json();
+        console.log('TTS conversion completed successfully');
+        setAffirmationAudioUrl(audioUrl);
+        onAffirmationGenerated(newAffirmations, audioUrl);
+        toast({
+          description: "TTS conversion completed. You can now play the audio.",
+        });
+      } catch (error) {
+        console.error('TTS conversion failed:', error);
+        toast({
+          description: "TTS conversion failed. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsTtsLoading(false);
       }
-
-      const { audioUrl } = await ttsResponse.json();
-      console.log('TTS conversion completed successfully');
-      setAffirmationAudioUrl(audioUrl);
-      onAffirmationGenerated(newAffirmations, audioUrl);
-      toast({
-        description: "TTS conversion completed. You can now play the audio.",
-      });
 
     } catch (error) {
       console.error('Error generating affirmations:', error);
@@ -1280,7 +1290,8 @@ export const Studio: React.FC = () => {
         },
         body: JSON.stringify({
           text: generatedAffirmations.join('. '),
-          voice: ttsVoice
+          voice: ttsVoice,
+          volume: ttsVolume // Add this line to pass the volume
         }),
       });
 
@@ -1397,7 +1408,7 @@ export const Studio: React.FC = () => {
         const text = generatedAffirmations.join(' ');
         console.log('Sending request with:', {
             text: text.substring(0, 50) + '...', // Log the first 50 characters of the text
-            selectedBackingTrack: selectedBackingTrack, // Ensure this is a string
+            selectedBackingTrack: selectedBackingTrack || '', // Ensure this is a string
             ttsVolume,
             backingTrackVolume,
             trackDuration: 900, // Set to 15 minutes (900 seconds)
