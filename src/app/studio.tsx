@@ -553,14 +553,13 @@ function SubliminalAudioPlayer({ audioUrl, isLoading, trackDuration, ttsDuration
   }, [playbackRate]);
 
   const handleVolumeChange = (newVolume: number) => {
-    setTtsVolume(newVolume); // Update the state with the new volume
+    onVolumeChange(newVolume); // Use the onVolumeChange prop instead of setTtsVolume
     if (audioRef.current) {
-        audioRef.current.volume = newVolume; // Set the volume on the audio element
+      audioRef.current.volume = newVolume; // Set the volume on the audio element
     }
     if (gainNodeRef.current && audioContextRef.current) {
-        gainNodeRef.current.gain.setValueAtTime(newVolume, audioContextRef.current.currentTime); // Set the volume on the gain node
+      gainNodeRef.current.gain.setValueAtTime(newVolume, audioContextRef.current.currentTime); // Set the volume on the gain node
     }
-    console.log('TTS Volume set to:', newVolume); // Debugging line
   };
 
   const formatTime = (time: number) => {
@@ -599,7 +598,7 @@ function SubliminalAudioPlayer({ audioUrl, isLoading, trackDuration, ttsDuration
             value={[volume]}
             max={1}
             step={0.01}
-            onValueChange={(value) => onVolumeChange(value[0])}
+            onValueChange={(value) => handleVolumeChange(value[0])}
             className="w-full"
             trackClassName="h-1 bg-gray-200"
             rangeClassName="h-1 bg-green-500"
@@ -1713,7 +1712,7 @@ export const Studio: React.FC = () => {
                 onPlayPause={handlePlayPause}
                 currentTime={currentTime}
                 volume={ttsVolume}
-                onVolumeChange={handleVolumeChange}
+                onVolumeChange={setTtsVolume} // Pass setTtsVolume here
                 playbackRate={playbackRate}
               />
             </CardContent>
