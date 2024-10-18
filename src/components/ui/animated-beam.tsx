@@ -28,5 +28,3 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({ className, container
 };
 
 // ... rest of the file content ...
-
-export { AnimatedBeamMultipleOutputDemo };

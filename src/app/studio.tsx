@@ -1252,57 +1252,69 @@ export const Studio: React.FC = () => {
 
   const handleDownloadAudio = async () => {
     if (!ttsAudioUrl) {
-        toast({
-            description: 'TTS audio is missing. Please generate affirmations first.',
-            variant: 'destructive',
-        });
-        return;
+      toast({
+        description: 'TTS audio is missing. Please generate affirmations first.',
+        variant: 'destructive',
+      });
+      return;
     }
 
     setIsLoading(true);
     try {
-        console.log('Starting audio download process...');
-        console.log('TTS Audio URL:', ttsAudioUrl);
-        console.log('Selected Backing Track:', selectedBackingTrack);
-        console.log('TTS Volume:', ttsVolume);
-        console.log('Backing Track Volume:', backingTrackVolume);
-        console.log('Track Duration:', 900); // 15 minutes
-        console.log('TTS Speed:', playbackRate);
-        console.log('TTS Duration:', ttsDuration);
+      console.log('Starting audio download process...');
+      console.log('TTS Audio URL:', ttsAudioUrl);
+      console.log('Selected Backing Track:', selectedBackingTrack);
+      console.log('TTS Volume:', ttsVolume);
+      console.log('Backing Track Volume:', backingTrackVolume);
+      console.log('Track Duration:', 900); // 15 minutes
+      console.log('TTS Speed:', playbackRate);
+      console.log('TTS Duration:', ttsDuration);
 
-        const response = await fetch('/api/combine-audio', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                text: ttsAudioUrl,
-                selectedBackingTrack: selectedBackingTrack || 'missing', // Ensure this is a string
-                ttsVolume,
-                backingTrackVolume,
-                trackDuration: 900, // Set to 15 minutes (900 seconds)
-                ttsSpeed: playbackRate,
-                ttsDuration
-            }),
-        });
+      const response = await fetch('/api/combine-audio', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: ttsAudioUrl,
+          selectedBackingTrack: selectedBackingTrack || '', // Ensure this is a string
+          ttsVolume,
+          backingTrackVolume,
+          trackDuration: 900, // Set to 15 minutes (900 seconds)
+          ttsSpeed: playbackRate,
+          ttsDuration
+        }),
+      });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error('Error response:', errorData);
-            throw new Error(errorData.error || 'Failed to combine audio');
-        }
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error response:', errorData);
+        throw new Error(errorData.error || 'Failed to combine audio');
+      }
 
-        // ... existing code ...
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'combined_affirmation.mp3';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({
+        description: 'Your affirmation audio has been downloaded successfully.',
+      });
     } catch (error) {
-        console.error('Error downloading audio:', error);
-        toast({
-            description: error instanceof Error ? error.message : 'An unknown error occurred while downloading the audio. Please try again.',
-            variant: 'destructive',
-        });
+      console.error('Error downloading audio:', error);
+      toast({
+        description: error instanceof Error ? error.message : 'An unknown error occurred while downloading the audio. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
-};
+  };
 
   const handleTTSConversion = async () => {
     setIsTtsLoading(true);
@@ -1312,7 +1324,7 @@ export const Studio: React.FC = () => {
     });
 
     try {
-      const response = await fetch('/api/text-to-speech', {
+      const response = await fetch('/api/tts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1325,11 +1337,26 @@ export const Studio: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to convert text to speech');
+        const errorText = await response.text();
+        throw new Error(`Failed to convert text to speech: ${errorText}`);
       }
 
-      const data = await response.json();
-      setTtsAudioUrl(data.audioUrl);
+      // Check if the response is JSON or audio
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        if (data.audioUrl) {
+          setTtsAudioUrl(data.audioUrl);
+        } else {
+          throw new Error('No audio URL received from the server');
+        }
+      } else {
+        // Assume the response is the audio file itself
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        setTtsAudioUrl(audioUrl);
+      }
+
       setIsTtsConverted(true);
       toast({
         description: "TTS conversion completed successfully!",
