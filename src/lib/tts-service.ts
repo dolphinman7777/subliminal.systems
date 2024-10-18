@@ -7,13 +7,15 @@ export async function getJobStatus(jobId: string): Promise<TTSJob> {
   // Mock implementation:
   return {
     id: jobId,
+    text: 'Sample text', // Add a mock text
+    voice: 'default', // Add a mock voice
     status: Math.random() > 0.8 ? 'completed' : 'processing', // 20% chance to complete
     audioUrl: Math.random() > 0.8 ? 'https://example.com/audio.mp3' : undefined,
   }
 }
 
-export interface TTSJob {
-  id: string
-  status: 'processing' | 'completed' | 'failed'
-  audioUrl?: string
+function processTTSJob(job: TTSJob) {
+  // Example usage
+  console.log(`Processing job ${job.id} with text: ${job.text}`);
+  // ... existing code ...
 }
