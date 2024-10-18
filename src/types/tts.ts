@@ -1,7 +1,8 @@
-export interface TTSJob {
+export type TTSJob = {
   id: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   text: string;
-  userId: string;
+  voice: string; // Add the 'voice' property here
   audioUrl?: string;
-}
+  error?: string;
+};

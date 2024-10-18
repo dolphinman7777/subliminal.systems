@@ -1,0 +1,7 @@
+export interface TTSJob {
+    id: string;
+    text: string;
+    voice: string;
+    status: 'pending' | 'completed' | 'failed';
+    // Add any other properties that are used in tts-service.ts
+}
