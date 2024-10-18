@@ -7,6 +7,9 @@ import {
   ToastProps,
   ToastProvider,
   ToastViewport,
+  ToastTitle,
+  ToastDescription,
+  ToastClose,
 } from "@/components/ui/toast"
 
 // Update the ExtendedToastProps interface
@@ -22,16 +25,17 @@ export function Toaster() {
 
   return (
     <ToastProvider>
-      {toasts.map(function ({ id, title, description, action, ...props }: ExtendedToastProps) {
+      {toasts.map(({ id, title, description, action, ...props }) => {
         return (
           <Toast key={id} {...props}>
             <div className="grid gap-1">
-              {title && <div className="font-medium">{title}</div>}
+              {title && <ToastTitle>{title}</ToastTitle>}
               {description && (
-                <div className="text-sm opacity-90">{description}</div>
+                <ToastDescription>{description}</ToastDescription>
               )}
             </div>
             {action}
+            <ToastClose />
           </Toast>
         )
       })}
