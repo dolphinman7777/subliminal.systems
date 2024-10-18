@@ -3,19 +3,18 @@
 import { useToast } from "@/hooks/use-toast"
 import {
   Toast,
-  ToastClose,
-  ToastDescription,
+  ToastActionElement,
+  ToastProps,
   ToastProvider,
-  ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast"
 
-// Update the ToastProps interface to include the id property
-interface ExtendedToastProps extends ToastProps {
+// Update the ExtendedToastProps interface
+interface ExtendedToastProps extends Omit<ToastProps, 'id'> {
   id: string;
   title?: string;
   description?: string;
-  action?: React.ReactNode;
+  action?: ToastActionElement;
 }
 
 export function Toaster() {
@@ -27,13 +26,12 @@ export function Toaster() {
         return (
           <Toast key={id} {...props}>
             <div className="grid gap-1">
-              {title && <ToastTitle>{title}</ToastTitle>}
+              {title && <div className="font-medium">{title}</div>}
               {description && (
-                <ToastDescription>{description}</ToastDescription>
+                <div className="text-sm opacity-90">{description}</div>
               )}
             </div>
             {action}
-            <ToastClose />
           </Toast>
         )
       })}
