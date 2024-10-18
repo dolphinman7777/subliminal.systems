@@ -1710,8 +1710,8 @@ export const Studio: React.FC = () => {
                 isPlaying={isPlaying}
                 onPlayPause={handlePlayPause}
                 currentTime={currentTime}
-                volume={ttsVolume}
-                onVolumeChange={setTtsVolume} // Pass setTtsVolume here
+                volume={volume}
+                onVolumeChange={handleVolumeChange}
                 playbackRate={playbackRate}
               />
             </CardContent>
