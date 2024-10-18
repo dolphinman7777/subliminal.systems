@@ -854,7 +854,7 @@ export const Studio: React.FC = () => {
   const [volume, setVolume] = useState(1);
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
-  const gainNodeRef = useRef<GainNode | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null); // Declare gainNodeRef
   const audioBufferRef = useRef<AudioBuffer | null>(null);
   const startTimeRef = useRef<number>(0);
 
@@ -898,7 +898,7 @@ export const Studio: React.FC = () => {
       const audioBuffer = await audioContextRef.current.decodeAudioData(arrayBuffer);
       audioBufferRef.current = audioBuffer;
 
-      gainNodeRef.current = audioContextRef.current.createGain();
+      gainNodeRef.current = audioContextRef.current.createGain(); // Initialize gainNodeRef
       gainNodeRef.current.connect(audioContextRef.current.destination);
     } catch (error) {
       console.error('Error setting up audio context:', error);
