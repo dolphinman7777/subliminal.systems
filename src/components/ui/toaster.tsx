@@ -10,12 +10,20 @@ import {
   ToastViewport,
 } from "@/components/ui/toast"
 
+// Update the ToastProps interface to include the id property
+interface ExtendedToastProps extends ToastProps {
+  id: string;
+  title?: string;
+  description?: string;
+  action?: React.ReactNode;
+}
+
 export function Toaster() {
   const { toasts } = useToast()
 
   return (
     <ToastProvider>
-      {toasts.map(function ({ id, title, description, action, ...props }) {
+      {toasts.map(function ({ id, title, description, action, ...props }: ExtendedToastProps) {
         return (
           <Toast key={id} {...props}>
             <div className="grid gap-1">
