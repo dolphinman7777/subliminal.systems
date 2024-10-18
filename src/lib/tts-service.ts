@@ -5,6 +5,7 @@ export async function generateTTS(job: TTSJob): Promise<string> {
   // ... (existing implementation)
 }
 
-export async function getTTSJobStatus(jobId: string): Promise<TTSJob> {
-  // ... (existing implementation)
+export async function getTTSJobStatus(jobId: string): Promise<string> {
+  // Implementation of getTTSJobStatus
+  // ...
 }

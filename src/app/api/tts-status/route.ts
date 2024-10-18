@@ -1,19 +1,19 @@
 import { NextResponse } from 'next/server';
-import { getJobStatus } from '@/lib/tts-service';
+import { getTTSJobStatus } from '@/lib/tts-service';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const jobId = searchParams.get('jobId');
 
   if (!jobId) {
-    return NextResponse.json({ message: 'Missing jobId' }, { status: 400 });
+    return NextResponse.json({ error: 'Job ID is required' }, { status: 400 });
   }
 
   try {
-    const status = await getJobStatus(jobId);
-    return NextResponse.json(status, { status: 200 });
+    const status = await getTTSJobStatus(jobId);
+    return NextResponse.json({ status });
   } catch (error) {
-    console.error('Error fetching TTS job status:', error);
-    return NextResponse.json({ message: 'Error fetching TTS job status' }, { status: 500 });
+    console.error('Error checking TTS job status:', error);
+    return NextResponse.json({ error: 'Failed to check job status' }, { status: 500 });
   }
 }
