@@ -94,7 +94,7 @@ const BentoCard: React.FC<BentoCardProps> = ({
   name,
   className,
   background,
-  Icon,
+  Icon, // This should be capitalized as it's a component
   description,
   href,
   cta,
@@ -111,9 +111,9 @@ const BentoCard: React.FC<BentoCardProps> = ({
     {background}
     <div className="relative z-10 flex flex-col h-full">
       <div className="flex-grow transition-all duration-300 group-hover:translate-y-[-1rem]">
-        <Icon 
+        <Icon // This should now work correctly
           className={cn(
-            "h-14 w-14 transform-gpu transition-all duration-300 ease-in-out group-hover:scale-90", // Reduced from h-16 w-16
+            "h-14 w-14 transform-gpu transition-all duration-300 ease-in-out group-hover:scale-90",
             name === "A.I Powered Affirmation Generation" && "animate-glow text-purple-600 dark:text-purple-400",
             name === "Subliminal Affirmation" && "animate-pulse-glow-blue text-blue-500 dark:text-blue-400",
             name === "Personalized Experience" && "animate-pulse-glow-green text-green-500 dark:text-green-400",
@@ -240,10 +240,10 @@ export default function HomePage() {
                 name="A.I Powered Affirmation Generation"
                 className="md:col-span-2"
                 background={<div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600" />}
-                Icon={Brain}
+                Icon={Brain} // Pass the imported icon component here
                 description="Tailored to your unique goals, these affirmations use advanced algorithms to align with your thoughts and support the manifestation of your intentions. Where science meets the mystical, AI-generated affirmations help tap into the mind's potential, guiding personal growth and transformation."
                 href="#"
-                cta="" // Empty string for cta
+                cta=""
               />
               <BentoCard
                 name="Subliminal Affirmation"
