@@ -5,7 +5,9 @@ import os from 'os';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 import { PollyClient, SynthesizeSpeechCommand, Engine, LanguageCode, OutputFormat, TextType, VoiceId } from "@aws-sdk/client-polly";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import https from 'https';
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const execAsync = promisify(exec);
 
@@ -238,8 +240,8 @@ async function generatePollyTTS(text: string): Promise<string> {
       VoiceId: "Joanna" as VoiceId,
     };
 
-    const command = new SynthesizeSpeechCommand(params);
-    const { AudioStream } = await polly.send(command);
+    const synthesizeCommand = new SynthesizeSpeechCommand(params);
+    const { AudioStream } = await polly.send(synthesizeCommand);
 
     if (!AudioStream) {
       throw new Error('Failed to generate audio with Polly');
@@ -256,8 +258,15 @@ async function generatePollyTTS(text: string): Promise<string> {
       ContentType: 'audio/mpeg'
     }));
 
-    // Store the S3 URL
-    audioUrls.push(`https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`);
+    // Generate a pre-signed URL for the uploaded file
+    const getObjectCommand = new GetObjectCommand({
+      Bucket: process.env.S3_BUCKET_NAME,
+      Key: fileName,
+    });
+    const signedUrl = await getSignedUrl(s3Client, getObjectCommand, { expiresIn: 3600 }); // URL expires in 1 hour
+
+    // Store the signed URL
+    audioUrls.push(signedUrl);
   }
 
   return audioUrls.join(',');
@@ -275,9 +284,11 @@ async function downloadAudio(url: string, prefix: string): Promise<string> {
     } else {
       // Handle regular URL
       const response = await fetch(url);
+      
       if (!response.ok) {
         throw new Error(`Failed to fetch ${prefix} audio. Status: ${response.status}`);
       }
+      
       const buffer = await response.arrayBuffer();
       const tempPath = path.join(os.tmpdir(), `${prefix}_${Date.now()}.mp3`);
       await fs.writeFile(tempPath, Buffer.from(buffer));
