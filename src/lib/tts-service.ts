@@ -1,5 +1,14 @@
 import { TTSJob } from '@/types/tts'
 
+// Update the TTSJob type definition to include the 'voice' property
+type TTSJob = {
+  id: string;
+  text: string;
+  voice: string; // Add this line to include the 'voice' property
+  status: 'completed' | 'processing';
+  audioUrl?: string;
+};
+
 export async function getJobStatus(jobId: string): Promise<TTSJob> {
   // TODO: Replace this mock implementation with actual logic to check job status.
   // For example, fetch the job status from a database or an external TTS service.
