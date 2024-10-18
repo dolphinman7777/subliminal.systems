@@ -1,21 +1,20 @@
 import { NextResponse } from 'next/server';
-import AWS from 'aws-sdk';
-import { Readable } from 'stream';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
+import { PollyClient, SynthesizeSpeechCommand, Engine, LanguageCode, OutputFormat, TextType } from "@aws-sdk/client-polly";
 
 const execAsync = promisify(exec);
 
-AWS.config.update({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION
+const polly = new PollyClient({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  },
 });
-
-const polly = new AWS.Polly();
 
 export async function POST(request: Request) {
   try {
@@ -25,21 +24,24 @@ export async function POST(request: Request) {
 
     const params = {
       Text: text,
-      OutputFormat: 'mp3',
+      OutputFormat: 'mp3' as OutputFormat,
       VoiceId: voice,
-      Engine: 'neural'
+      Engine: 'neural' as Engine,
+      LanguageCode: "en-US" as LanguageCode,
+      TextType: "text" as TextType
     };
 
     console.log('Polly params:', params);
 
-    const data = await polly.synthesizeSpeech(params).promise();
+    const command = new SynthesizeSpeechCommand(params);
+    const response = await polly.send(command);
     
-    console.log('Polly response:', data);
+    console.log('Polly response:', response);
 
-    if (data.AudioStream instanceof Buffer) {
+    if (response.AudioStream instanceof Uint8Array) {
       // Save the audio to a temporary file
       const tempFile = path.join(os.tmpdir(), `tts_${Date.now()}.mp3`);
-      await fs.writeFile(tempFile, data.AudioStream);
+      await fs.writeFile(tempFile, response.AudioStream);
 
       // Adjust volume using ffmpeg
       const outputFile = path.join(os.tmpdir(), `tts_adjusted_${Date.now()}.mp3`);
@@ -58,8 +60,8 @@ export async function POST(request: Request) {
       const audioUrl = `data:audio/mp3;base64,${audioBase64}`;
       return NextResponse.json({ audioUrl });
     } else {
-      console.error('AudioStream is not a Buffer:', data.AudioStream);
-      throw new Error('Failed to generate audio: AudioStream is not a Buffer');
+      console.error('AudioStream is not a Uint8Array:', response.AudioStream);
+      throw new Error('Failed to generate audio: AudioStream is not a Uint8Array');
     }
   } catch (error) {
     console.error('Error in TTS conversion:', error);
