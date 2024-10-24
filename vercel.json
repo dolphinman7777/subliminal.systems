@@ -21,6 +21,9 @@
     },
     "src/pages/api/**/*": {
       "runtime": "nodejs18.x"
+    },
+    "api/*.ts": {
+      "runtime": "nodejs18.x"
     }
   },
   "build": {
