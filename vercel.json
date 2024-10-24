@@ -4,25 +4,9 @@
   "installCommand": "apt-get update && apt-get install -y ffmpeg && npm install",
   "framework": "nextjs",
   "outputDirectory": ".next",
-  "routes": [
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/" }
-  ],
-  "ignoreCommand": null,
-  "functions": {
-    "src/pages/api/**/*": {
-      "runtime": "@vercel/node@latest"
-    }
-  },
   "build": {
     "env": {
       "FFMPEG_PATH": "/usr/bin/ffmpeg"
     }
-  },
-  "builds": [
-    {
-      "src": "next.config.js",
-      "use": "@vercel/next"
-    }
-  ]
+  }
 }
