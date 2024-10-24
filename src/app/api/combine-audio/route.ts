@@ -30,13 +30,8 @@ const s3Client = new S3Client({
 
 // Add this helper function at the top of the file
 function getFFmpegPath(): string {
-  // Use ffmpeg-static as primary option
   if (ffmpegStatic) {
-    return ffmpegStatic;
-  }
-  // Fallback to system FFmpeg if available
-  if (existsSync('/usr/bin/ffmpeg')) {
-    return '/usr/bin/ffmpeg';
+    return ffmpegStatic; // Ensure this is returning the correct path
   }
   throw new Error('FFmpeg not found');
 }
