@@ -13,8 +13,11 @@ const nextConfig = {
     NEXT_PUBLIC_CLOUDFRONT_URL: process.env.NEXT_PUBLIC_CLOUDFRONT_URL,
     // Add other public environment variables here
   },
-  webpack: (config) => {
-    config.externals = [...config.externals, 'ffmpeg-static'];
+  webpack: (config, { isServer }) => {
+    // Don't bundle ffmpeg-static on the client side
+    if (!isServer) {
+      config.externals = [...(config.externals || []), 'ffmpeg-static'];
+    }
     return config;
   },
 }

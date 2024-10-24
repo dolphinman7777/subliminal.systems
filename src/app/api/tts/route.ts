@@ -9,6 +9,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Text is required' }, { status: 400 });
     }
 
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    if (!apiKey) {
+      throw new Error('Elevenlabs API key is missing');
+    }
+
     const response = await axios.post(
       'https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM',
       {
@@ -17,13 +22,13 @@ export async function POST(request: Request) {
         voice_settings: {
           stability: 0.5,
           similarity_boost: 0.5,
-          volume: volume || 1 // Use the provided volume or default to 1
+          volume: volume || 1
         }
       },
       {
         headers: {
           'Accept': 'audio/mpeg',
-          'xi-api-key': process.env.ELEVENLABS_API_KEY,
+          'xi-api-key': apiKey,
           'Content-Type': 'application/json',
         },
         responseType: 'arraybuffer'

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "turbo run dev --parallel",
-    "build": "chmod +x node_modules/ffmpeg-static/ffmpeg && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "turbo lint",
     "worker": "ts-node src/workers/affirmationWorker.ts",
@@ -18,7 +18,8 @@
     "restart-worker-pm2": "pm2 restart ecosystem.config.js",
     "monitor-worker-pm2": "pm2 monit",
     "worker:tts": "turbo run worker:tts",
-    "worker:backing": "turbo run worker:backing"
+    "worker:backing": "turbo run worker:backing",
+    "postinstall": "node node_modules/ffmpeg-static/install.js"
   },
   "dependencies": {
     "@aws-sdk/client-polly": "^3.670.0",

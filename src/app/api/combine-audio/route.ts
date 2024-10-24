@@ -7,8 +7,7 @@ import { exec } from 'child_process';
 import { PollyClient, SynthesizeSpeechCommand, Engine, LanguageCode, OutputFormat, TextType, VoiceId } from "@aws-sdk/client-polly";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import ffmpeg from 'fluent-ffmpeg';
-import ffmpegStatic from 'ffmpeg-static';
-import { existsSync } from 'fs';
+import { getFFmpegPath } from '@/utils/ffmpeg'; // Use the imported function
 
 const execAsync = promisify(exec);
 
@@ -27,14 +26,6 @@ const s3Client = new S3Client({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
   },
 });
-
-// Add this helper function at the top of the file
-function getFFmpegPath(): string {
-  if (ffmpegStatic) {
-    return ffmpegStatic; // Ensure this is returning the correct path
-  }
-  throw new Error('FFmpeg not found');
-}
 
 // Helper function to split ttsSpeed into multiple atempo filters
 function getAtempoFilters(speed: number): string[] {
@@ -65,17 +56,23 @@ function getAtempoFilters(speed: number): string[] {
 
 export async function POST(request: Request) {
   try {
-    // Verify FFMPEG is installed
-    await new Promise((resolve, reject) => {
-      exec(`${ffmpegStatic} -version`, (error, stdout, stderr) => {
-        if (error) {
-          console.error('FFMPEG not found:', error);
-          reject(error);
-        }
-        console.log('FFMPEG version:', stdout);
-        resolve(stdout);
-      });
-    });
+    console.log('Starting audio combination process...');
+    
+    // Get ffmpeg path
+    const ffmpegPath = getFFmpegPath();
+    console.log('FFmpeg path:', ffmpegPath);
+
+    // Test ffmpeg installation
+    try {
+      const { stdout } = await execAsync(`${ffmpegPath} -version`);
+      console.log('FFmpeg version:', stdout);
+    } catch (error) {
+      console.error('Error testing ffmpeg:', error);
+      return NextResponse.json({ 
+        error: 'FFmpeg not available',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }, { status: 500 });
+    }
 
     const { 
       text, 
@@ -87,14 +84,8 @@ export async function POST(request: Request) {
       ttsDuration
     } = await request.json();
 
-    console.log('Received parameters for audio mixing:', {
-      text: text ? `${text.substring(0, 50)}...` : 'missing',
-      selectedBackingTrack: selectedBackingTrack ? (typeof selectedBackingTrack === 'string' ? 'present' : 'invalid type') : 'missing',
-      ttsVolume,
-      backingTrackVolume,
-      trackDuration: requestTrackDuration, // Use the renamed variable
-      ttsSpeed,
-      ttsDuration
+    console.log('Received parameters:', {
+      text, selectedBackingTrack, ttsVolume, backingTrackVolume, requestTrackDuration, ttsSpeed, ttsDuration
     });
 
     // Validate parameters
@@ -179,7 +170,6 @@ export async function POST(request: Request) {
         const backingVolumeDb = Math.log10(backingTrackVolume) * 20;
         const loopCount = Math.ceil(trackDuration / (ttsDuration / ttsSpeed));
 
-        const ffmpegPath = getFFmpegPath();
         const command = `${ffmpegPath} -i "${ttsPath}" -stream_loop -1 -i "${backingPath}" -filter_complex "[0:a]atempo=${ttsSpeed},volume=${ttsVolumeDb}dB,aloop=loop=${loopCount}:size=${Math.floor(ttsDuration * 48000)}[a];[1:a]volume=${backingVolumeDb}dB[b];[a][b]amix=inputs=2:duration=longest:weights=${ttsVolume} ${backingTrackVolume},asetpts=PTS-STARTPTS,atrim=0:${trackDuration}" -ar 48000 -acodec libmp3lame -b:a 192k "${outputPath}"`;
 
         await execAsync(command);
@@ -209,7 +199,10 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('Error processing request:', error);
-    return NextResponse.json({ error: 'Internal Server Error', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Internal Server Error', 
+      details: error instanceof Error ? error.message : 'Unknown error' 
+    }, { status: 500 });
   }
 }
 

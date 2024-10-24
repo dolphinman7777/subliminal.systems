@@ -1,22 +1,24 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { useClerk } from "@clerk/nextjs";
 import { LogOut, Download, Loader2, CheckCircle, Music } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Image from 'next/image';
 import DotPattern from "@/components/ui/dot-pattern";
 
 export default function PaymentSuccess() {
-  const router = useRouter()
-  const { toast } = useToast()
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
   const { signOut } = useClerk();
-  const [isLoading, setIsLoading] = useState(false)
-  const [showConfetti, setShowConfetti] = useState(true)
-  const [audioDetails, setAudioDetails] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(true);
+  const [audioDetails, setAudioDetails] = useState<any>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const storedAudioDetails = localStorage.getItem('pendingAudioDetails');
@@ -30,14 +32,43 @@ export default function PaymentSuccess() {
       router.push('/studio');
     }
 
-    localStorage.setItem('paymentCompleted', 'true')
+    localStorage.setItem('paymentCompleted', 'true');
     toast({
       description: 'Payment successful! You can now download your audio.',
-    })
+    });
+    
     // Hide confetti after 5 seconds
     const timer = setTimeout(() => setShowConfetti(false), 5000);
     return () => clearTimeout(timer);
-  }, [])
+  }, [router, toast]);
+
+  useEffect(() => {
+    if (!searchParams) return;
+    
+    const sessionId = searchParams.get('session_id');
+    const audioId = searchParams.get('audio_id');
+    
+    if (sessionId && audioId) {
+      fetch('/api/verify-purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, audioId })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.audioUrl) {
+          setAudioUrl(data.audioUrl);
+        }
+      })
+      .catch(error => {
+        console.error('Error verifying purchase:', error);
+        toast({
+          description: "Failed to verify purchase. Please try again.",
+          variant: "destructive",
+        });
+      });
+    }
+  }, [searchParams, toast]);
 
   async function handleDownloadAudio() {
     setIsLoading(true);
@@ -46,29 +77,12 @@ export default function PaymentSuccess() {
         throw new Error('Audio data is missing. Please go back to the studio and recreate your audio.');
       }
 
-      const { 
-        ttsAudioUrl, 
-        selectedBackingTrack, 
-        ttsVolume, 
-        backingTrackVolume, 
-        trackDuration, 
-        ttsSpeed,
-        ttsDuration
-      } = audioDetails;
+      // Extract necessary details from audioDetails
+      const { ttsAudioUrl, selectedBackingTrack, ttsVolume, backingTrackVolume, trackDuration, ttsSpeed, ttsDuration } = audioDetails;
 
-      if (!ttsAudioUrl || typeof ttsDuration !== 'number') {
-        throw new Error('TTS audio or duration is missing. Please go back to the studio and recreate your audio.');
+      if (!ttsAudioUrl) {
+        throw new Error('TTS audio URL is missing.');
       }
-
-      console.log('Sending audio details:', {
-        ttsAudioUrl: ttsAudioUrl ? 'present' : 'missing',
-        selectedBackingTrack: selectedBackingTrack ? 'present' : 'missing',
-        ttsVolume,
-        backingTrackVolume,
-        trackDuration,
-        ttsSpeed,
-        ttsDuration
-      });
 
       const response = await fetch('/api/combine-audio', {
         method: 'POST',
@@ -88,7 +102,8 @@ export default function PaymentSuccess() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate final audio');
+        console.error('Error in handleDownloadAudio:', errorData);
+        throw new Error('Failed to combine audio');
       }
 
       const blob = await response.blob();
@@ -111,7 +126,7 @@ export default function PaymentSuccess() {
     } catch (error) {
       console.error('Error in handleDownloadAudio:', error);
       toast({
-        description: error instanceof Error ? error.message : 'An unknown error occurred while downloading the audio. Please try again.',
+        description: "There was an error downloading your affirmation audio. Please try again.",
         variant: "destructive",
       });
     } finally {
