@@ -30,13 +30,13 @@ const s3Client = new S3Client({
 
 // Add this helper function at the top of the file
 function getFFmpegPath(): string {
-  // Check if system FFmpeg exists
-  if (existsSync('/usr/bin/ffmpeg')) {
-    return '/usr/bin/ffmpeg';
-  }
-  // Fallback to ffmpeg-static
+  // Use ffmpeg-static as primary option
   if (ffmpegStatic) {
     return ffmpegStatic;
+  }
+  // Fallback to system FFmpeg if available
+  if (existsSync('/usr/bin/ffmpeg')) {
+    return '/usr/bin/ffmpeg';
   }
   throw new Error('FFmpeg not found');
 }
@@ -70,6 +70,18 @@ function getAtempoFilters(speed: number): string[] {
 
 export async function POST(request: Request) {
   try {
+    // Verify FFMPEG is installed
+    await new Promise((resolve, reject) => {
+      exec('ffmpeg -version', (error, stdout, stderr) => {
+        if (error) {
+          console.error('FFMPEG not found:', error);
+          reject(error);
+        }
+        console.log('FFMPEG version:', stdout);
+        resolve(stdout);
+      });
+    });
+
     const { 
       text, 
       selectedBackingTrack, 

@@ -1,12 +1,10 @@
 {
   "version": 2,
   "buildCommand": "next build",
-  "installCommand": "apt-get update && apt-get install -y ffmpeg && npm install",
+  "installCommand": "npm install",
   "framework": "nextjs",
   "outputDirectory": ".next",
-  "build": {
-    "env": {
-      "FFMPEG_PATH": "/usr/bin/ffmpeg"
-    }
+  "env": {
+    "FFMPEG_PATH": "./node_modules/ffmpeg-static/ffmpeg"
   }
 }
