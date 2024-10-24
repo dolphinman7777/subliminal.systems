@@ -1,0 +1,62 @@
+.debug-grid {
+  border: 2px solid red;
+}
+
+.debug-box {
+  border: 1px solid blue;
+}
+
+/* Mobile layout */
+@media (max-width: 767px) {
+  .bento-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+  }
+
+  .bento-affirmation-creator { order: 1 !important; }
+  .bento-generated-affirmations { order: 2 !important; }
+  .bento-subliminal-player { order: 3 !important; }
+  .bento-audio-layer { order: 4 !important; }
+  .bento-audio-controls { order: 5 !important; }
+}
+
+/* Tablet layout */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .bento-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    grid-template-areas:
+      "affirmation-creator affirmation-creator generated-affirmations"
+      "subliminal-player subliminal-player audio-layer"
+      "audio-controls audio-controls audio-controls" !important;
+    gap: 1rem !important;
+  }
+
+  .bento-affirmation-creator { grid-area: affirmation-creator !important; }
+  .bento-generated-affirmations { grid-area: generated-affirmations !important; }
+  .bento-subliminal-player { grid-area: subliminal-player !important; }
+  .bento-audio-layer { grid-area: audio-layer !important; }
+  .bento-audio-controls { grid-area: audio-controls !important; }
+}
+
+/* Desktop layout */
+@media (min-width: 1024px) {
+  .bento-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    grid-template-areas:
+      "affirmation-creator affirmation-creator generated-affirmations generated-affirmations"
+      "subliminal-player subliminal-player audio-layer audio-layer"
+      "audio-controls audio-controls audio-controls audio-controls" !important;
+    gap: 1rem !important;
+  }
+
+  .bento-affirmation-creator { grid-area: affirmation-creator !important; }
+  .bento-generated-affirmations { grid-area: generated-affirmations !important; }
+  .bento-subliminal-player { grid-area: subliminal-player !important; }
+  .bento-audio-layer { grid-area: audio-layer !important; }
+  .bento-audio-controls { grid-area: audio-controls !important; }
+}
+
+/* You can remove this file if not needed for other purposes */

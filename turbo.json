@@ -1,0 +1,50 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "pipeline": {
+    "build": {
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "dependsOn": ["^build"],
+      "env": [
+        "NEXT_PUBLIC_*",
+        "DATABASE_URL",
+        "UPSTASH_REDIS_REST_URL",
+        "UPSTASH_REDIS_REST_TOKEN",
+        "AWS_*",
+        "S3_BUCKET_NAME",
+        "STRIPE_*",
+        "OPENAI_*",
+        "CLERK_*"
+      ]
+    },
+    "lint": {
+      "outputs": []
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "env": [
+        "UPSTASH_REDIS_REST_URL",
+        "UPSTASH_REDIS_REST_TOKEN"
+      ]
+    },
+    "worker:tts": {
+      "cache": false,
+      "persistent": true,
+      "env": [
+        "AWS_*",
+        "S3_BUCKET_NAME",
+        "OPENAI_*",
+        "UPSTASH_REDIS_REST_*"
+      ]
+    },
+    "worker:backing": {
+      "cache": false,
+      "persistent": true,
+      "env": [
+        "AWS_*",
+        "S3_BUCKET_NAME",
+        "UPSTASH_REDIS_REST_*"
+      ]
+    }
+  }
+}
