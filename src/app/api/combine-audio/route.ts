@@ -3,13 +3,12 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import { promisify } from 'util';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
+import ffmpegPath from 'ffmpeg-static';
 import { PollyClient, SynthesizeSpeechCommand, Engine, LanguageCode, OutputFormat, TextType, VoiceId } from "@aws-sdk/client-polly";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import ffmpeg from 'fluent-ffmpeg';
-import { getFFmpegPath } from '@/utils/ffmpeg'; // Use the imported function
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 const polly = new PollyClient({
   region: process.env.AWS_REGION,
@@ -27,44 +26,26 @@ const s3Client = new S3Client({
   },
 });
 
-// Helper function to split ttsSpeed into multiple atempo filters
-function getAtempoFilters(speed: number): string[] {
-  const filters: string[] = [];
-  
-  // Limit the speed to a maximum of 4.0 and minimum of 0.5
-  speed = Math.min(Math.max(speed, 0.5), 4.0);
-  
-  // Handle speed greater than 2.0
-  while (speed > 2.0) {
-    filters.push('atempo=2.0');
-    speed /= 2.0;
-  }
-  
-  // Handle speed less than 0.5
-  while (speed < 0.5) {
-    filters.push('atempo=0.5');
-    speed /= 0.5;
-  }
-  
-  // Add the remaining atempo filter if speed is not exactly 1.0
-  if (speed !== 1.0) {
-    filters.push(`atempo=${speed.toFixed(2)}`);
-  }
-  
-  return filters;
-}
+// Manually set the path to the correct FFmpeg binary
+const manualFfmpegPath = '/opt/homebrew/bin/ffmpeg'; // Ensure this is the correct path
 
 export async function POST(request: Request) {
   try {
     console.log('Starting audio combination process...');
     
-    // Get ffmpeg path
-    const ffmpegPath = getFFmpegPath();
-    console.log('FFmpeg path:', ffmpegPath);
+    // Use the manually set path if ffmpegPath is not valid
+    const effectiveFfmpegPath = manualFfmpegPath || process.env.FFMPEG_PATH || ffmpegPath;
+    console.log('FFmpeg path:', effectiveFfmpegPath);
+    if (!effectiveFfmpegPath) {
+      console.error('FFmpeg path is not set. Please check the ffmpeg-static installation.');
+      return NextResponse.json({ 
+        error: 'FFmpeg path is not set. Please check the ffmpeg-static installation.'
+      }, { status: 500 });
+    }
 
     // Test ffmpeg installation
     try {
-      const { stdout } = await execAsync(`${ffmpegPath} -version`);
+      const { stdout } = await execFileAsync(effectiveFfmpegPath, ['-version']);
       console.log('FFmpeg version:', stdout);
     } catch (error) {
       console.error('Error testing ffmpeg:', error);
@@ -79,7 +60,7 @@ export async function POST(request: Request) {
       selectedBackingTrack, 
       ttsVolume, 
       backingTrackVolume, 
-      trackDuration: requestTrackDuration, // Rename here to avoid conflict
+      trackDuration: requestTrackDuration, 
       ttsSpeed,
       ttsDuration
     } = await request.json();
@@ -94,7 +75,7 @@ export async function POST(request: Request) {
       !selectedBackingTrack || typeof selectedBackingTrack !== 'string' || 
       typeof ttsVolume !== 'number' || 
       typeof backingTrackVolume !== 'number' || 
-      typeof requestTrackDuration !== 'number' || // Add the missing '||' here
+      typeof requestTrackDuration !== 'number' || 
       typeof ttsSpeed !== 'number' || 
       typeof ttsDuration !== 'number'
     ) {
@@ -103,7 +84,7 @@ export async function POST(request: Request) {
         selectedBackingTrack: typeof selectedBackingTrack, 
         ttsVolume: typeof ttsVolume, 
         backingTrackVolume: typeof backingTrackVolume, 
-        trackDuration: typeof requestTrackDuration, // Use the renamed variable
+        trackDuration: typeof requestTrackDuration, 
         ttsSpeed: typeof ttsSpeed, 
         ttsDuration: typeof ttsDuration 
       });
@@ -119,14 +100,14 @@ export async function POST(request: Request) {
       throw new Error('TTS duration cannot exceed track duration.');
     }
 
-    const textToGenerate = text.repeat(Math.ceil(900 / ttsDuration)); // Repeat the text to ensure enough duration
+    const textToGenerate = text.repeat(Math.ceil(900 / ttsDuration));
     let ttsAudioUrl: string;
     if (text.startsWith('data:audio')) {
       console.log('TTS audio already provided, skipping generation...');
       ttsAudioUrl = text;
     } else {
       console.log('Generating TTS audio...');
-      ttsAudioUrl = await generatePollyTTS(textToGenerate); // Generate TTS audio with the repeated text
+      ttsAudioUrl = await generatePollyTTS(textToGenerate);
     }
     console.log('TTS audio URL:', ttsAudioUrl);
 
@@ -137,10 +118,8 @@ export async function POST(request: Request) {
     console.log('Downloading backing track...');
     let backingTrackPath: string;
     if (selectedBackingTrack === 'present') {
-      // Handle the case where no backing track is selected
       backingTrackPath = path.join(os.tmpdir(), 'silent.mp3');
-      // Create a silent audio file (you may need to implement this)
-      await createSilentAudio(backingTrackPath, requestTrackDuration);
+      await createSilentAudio(effectiveFfmpegPath, backingTrackPath, requestTrackDuration);
     } else {
       backingTrackPath = await downloadAudio(selectedBackingTrack, 'backing');
     }
@@ -148,35 +127,7 @@ export async function POST(request: Request) {
 
     console.log('Mixing audio...');
     const outputPath = path.join(os.tmpdir(), `combined_${Date.now()}.mp3`);
-    const mixAudio = async (
-        ttsPath: string,
-        backingPath: string,
-        ttsVolume: number,
-        backingTrackVolume: number,
-        trackDuration: number,
-        ttsSpeed: number,
-        ttsDuration: number,
-        outputPath: string
-    ): Promise<void> => {
-        console.log('Mixing audio with parameters:', {
-            ttsVolume,
-            backingTrackVolume,
-            trackDuration,
-            ttsSpeed,
-            ttsDuration
-        });
-
-        const ttsVolumeDb = Math.log10(ttsVolume) * 20;
-        const backingVolumeDb = Math.log10(backingTrackVolume) * 20;
-        const loopCount = Math.ceil(trackDuration / (ttsDuration / ttsSpeed));
-
-        const command = `${ffmpegPath} -i "${ttsPath}" -stream_loop -1 -i "${backingPath}" -filter_complex "[0:a]atempo=${ttsSpeed},volume=${ttsVolumeDb}dB,aloop=loop=${loopCount}:size=${Math.floor(ttsDuration * 48000)}[a];[1:a]volume=${backingVolumeDb}dB[b];[a][b]amix=inputs=2:duration=longest:weights=${ttsVolume} ${backingTrackVolume},asetpts=PTS-STARTPTS,atrim=0:${trackDuration}" -ar 48000 -acodec libmp3lame -b:a 192k "${outputPath}"`;
-
-        await execAsync(command);
-    };
-    const trackDuration = 900; // 15 minutes in seconds
-    // Call the mixAudio function with the correct duration
-    await mixAudio(ttsAudioPath, backingTrackPath, ttsVolume, backingTrackVolume, trackDuration, ttsSpeed, ttsDuration, outputPath);
+    await mixAudio(effectiveFfmpegPath, ttsAudioPath, backingTrackPath, ttsVolume, backingTrackVolume, requestTrackDuration, ttsSpeed, ttsDuration, outputPath);
     console.log('Audio mixed successfully');
 
     console.log('Reading mixed audio file...');
@@ -207,10 +158,9 @@ export async function POST(request: Request) {
 }
 
 async function generatePollyTTS(text: string): Promise<string> {
-  const MAX_TEXT_LENGTH = 3000; // Amazon Polly's maximum text length
+  const MAX_TEXT_LENGTH = 3000;
   const audioUrls: string[] = [];
 
-  // Split the text into chunks
   const textChunks = [];
   for (let i = 0; i < text.length; i += MAX_TEXT_LENGTH) {
     textChunks.push(text.slice(i, i + MAX_TEXT_LENGTH));
@@ -236,7 +186,6 @@ async function generatePollyTTS(text: string): Promise<string> {
     const buffer = await AudioStream.transformToByteArray();
     const fileName = `tts_${Date.now()}_${audioUrls.length}.mp3`;
 
-    // Upload to S3
     await s3Client.send(new PutObjectCommand({
       Bucket: process.env.S3_BUCKET_NAME,
       Key: fileName,
@@ -244,7 +193,6 @@ async function generatePollyTTS(text: string): Promise<string> {
       ContentType: 'audio/mpeg'
     }));
 
-    // Store the S3 URL
     audioUrls.push(`https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`);
   }
 
@@ -254,14 +202,12 @@ async function generatePollyTTS(text: string): Promise<string> {
 async function downloadAudio(url: string, prefix: string): Promise<string> {
   try {
     if (url.startsWith('data:')) {
-      // Handle base64 data URL
       const base64Data = url.split(',')[1];
       const buffer = Buffer.from(base64Data, 'base64');
       const tempPath = path.join(os.tmpdir(), `${prefix}_${Date.now()}.mp3`);
       await fs.writeFile(tempPath, buffer);
       return tempPath;
     } else {
-      // Handle regular URL
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`Failed to fetch ${prefix} audio. Status: ${response.status}`);
@@ -281,8 +227,44 @@ async function downloadAudio(url: string, prefix: string): Promise<string> {
   }
 }
 
-// Add this function to create a silent audio file
-async function createSilentAudio(outputPath: string, duration: number): Promise<void> {
-  const command = `ffmpeg -f lavfi -i anullsrc=r=44100:cl=stereo -t ${duration} -q:a 9 -acodec libmp3lame "${outputPath}"`;
-  await execAsync(command);
+async function createSilentAudio(effectiveFfmpegPath: string, outputPath: string, duration: number): Promise<void> {
+  const args = ['-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=stereo', '-t', duration.toString(), '-q:a', '9', '-acodec', 'libmp3lame', outputPath];
+  await execFileAsync(effectiveFfmpegPath, args);
+}
+
+async function mixAudio(
+  effectiveFfmpegPath: string,
+  ttsPath: string,
+  backingPath: string,
+  ttsVolume: number,
+  backingTrackVolume: number,
+  trackDuration: number,
+  ttsSpeed: number,
+  ttsDuration: number,
+  outputPath: string
+): Promise<void> {
+  console.log('Mixing audio with parameters:', {
+    ttsVolume,
+    backingTrackVolume,
+    trackDuration,
+    ttsSpeed,
+    ttsDuration
+  });
+
+  const ttsVolumeDb = Math.log10(ttsVolume) * 20;
+  const backingVolumeDb = Math.log10(backingTrackVolume) * 20;
+  const loopCount = Math.ceil(trackDuration / (ttsDuration / ttsSpeed));
+
+  const args = [
+    '-i', ttsPath,
+    '-stream_loop', '-1',
+    '-i', backingPath,
+    '-filter_complex', `[0:a]atempo=${ttsSpeed},volume=${ttsVolumeDb}dB,aloop=loop=${loopCount}:size=${Math.floor(ttsDuration * 48000)}[a];[1:a]volume=${backingVolumeDb}dB[b];[a][b]amix=inputs=2:duration=longest:weights=${ttsVolume} ${backingTrackVolume},asetpts=PTS-STARTPTS,atrim=0:${trackDuration}`,
+    '-ar', '48000',
+    '-acodec', 'libmp3lame',
+    '-b:a', '192k',
+    outputPath
+  ];
+
+  await execFileAsync(effectiveFfmpegPath, args);
 }
