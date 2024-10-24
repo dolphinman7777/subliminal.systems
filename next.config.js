@@ -14,7 +14,7 @@ const nextConfig = {
     // Add other public environment variables here
   },
   webpack: (config) => {
-    config.externals = [...config.externals, 'ffmpeg-static', 'ffprobe-static'];
+    config.externals = [...config.externals, 'ffmpeg-static'];
     return config;
   },
 }

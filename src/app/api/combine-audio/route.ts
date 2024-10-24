@@ -67,7 +67,7 @@ export async function POST(request: Request) {
   try {
     // Verify FFMPEG is installed
     await new Promise((resolve, reject) => {
-      exec('ffmpeg -version', (error, stdout, stderr) => {
+      exec(`${ffmpegStatic} -version`, (error, stdout, stderr) => {
         if (error) {
           console.error('FFMPEG not found:', error);
           reject(error);
