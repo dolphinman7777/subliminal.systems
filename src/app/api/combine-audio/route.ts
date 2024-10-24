@@ -4,7 +4,7 @@ import path from 'path';
 import os from 'os';
 import { promisify } from 'util';
 import { execFile } from 'child_process';
-import ffmpegPath from 'ffmpeg-static';
+import ffmpeg from 'fluent-ffmpeg';
 import { PollyClient, SynthesizeSpeechCommand, Engine, LanguageCode, OutputFormat, TextType, VoiceId } from "@aws-sdk/client-polly";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
@@ -26,8 +26,9 @@ const s3Client = new S3Client({
   },
 });
 
-// Manually set the path to the correct FFmpeg binary
-const manualFfmpegPath = '/opt/homebrew/bin/ffmpeg'; // Ensure this is the correct path
+// Set the path to the local ffmpeg binary
+const ffmpegPath = path.resolve(__dirname, '../../../bin/ffmpeg');
+ffmpeg.setFfmpegPath(ffmpegPath);
 
 export async function POST(request: Request) {
   try {

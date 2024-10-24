@@ -3,5 +3,14 @@
   "buildCommand": "npm run build",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "builds": [
+    {
+      "src": "src/app/api/**/*.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "env": {
+    "FFMPEG_PATH": "./bin/ffmpeg"
+  }
 }
