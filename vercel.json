@@ -10,20 +10,8 @@
   ],
   "ignoreCommand": null,
   "functions": {
-    "src/app/api/combine-audio/route.ts": {
-      "memory": 1024,
-      "maxDuration": 60,
-      "runtime": "nodejs18.x"
-    },
-    "src/app/api/*.ts": {
-      "maxDuration": 10,
-      "runtime": "nodejs18.x"
-    },
     "src/pages/api/**/*": {
       "runtime": "@vercel/node@latest"
-    },
-    "api/*.ts": {
-      "runtime": "nodejs18.x"
     }
   },
   "build": {
